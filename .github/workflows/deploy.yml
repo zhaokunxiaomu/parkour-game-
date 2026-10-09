@@ -25,14 +25,14 @@ jobs:
         with:
           node-version: 20
 
-      # Node 18+ 自带 corepack，用它启用 pnpm，完全避免版本差异
-      - name: Enable pnpm via corepack
+      # 用 corepack 启与本地完全一致的 pnpm 版本
+      - name: Enable pnpm
         run: |
           corepack enable
           corepack prepare pnpm@10.24.0 --activate
-          pnpm --version
 
-      - run: pnpm install
+      # pnpm 8+ 默认就是 frozen-lockfile，必须显式 --no-frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile
       - run: pnpm build
 
       - uses: actions/upload-pages-artifact@v3
