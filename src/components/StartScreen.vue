@@ -3,9 +3,9 @@ defineEmits<{ (e: 'start'): void }>()
 </script>
 
 <template>
-  <div class="overlay">
+  <div class="overlay" @click.stop>
     <div class="panel">
-      <h1 class="title">🏃 跑酷大冒险</h1>
+      <h1 class="title">跑酷大冒险</h1>
       <p class="tip">点击屏幕 / 空格 / ↑ 跳跃</p>
       <button class="btn" @click="$emit('start')">开始游戏</button>
     </div>

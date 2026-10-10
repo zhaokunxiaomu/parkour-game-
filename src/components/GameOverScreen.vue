@@ -8,9 +8,9 @@ const isNewBest = computed(() => props.score >= props.best && props.score > 0)
 </script>
 
 <template>
-  <div class="overlay">
+  <div class="overlay" @click.stop>
     <div class="panel">
-      <h1 class="title">💥 Game Over</h1>
+      <h1 class="title">Game Over</h1>
       <div class="scores">
         <div class="row">
           <span class="label">本局</span>
@@ -20,7 +20,7 @@ const isNewBest = computed(() => props.score >= props.best && props.score > 0)
           <span class="label">最高</span>
           <span class="value best">{{ best }}</span>
         </div>
-        <div v-if="isNewBest" class="new-best">🎉 新纪录！</div>
+        <div v-if="isNewBest" class="new-best">新纪录！</div>
       </div>
       <button class="btn" @click="$emit('restart')">再来一局</button>
     </div>
