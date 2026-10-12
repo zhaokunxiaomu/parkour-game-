@@ -15,7 +15,6 @@ defineEmits<{
         <button class="btn" @click="$emit('restart')">重新开始</button>
         <button class="btn ghost" @click="$emit('menu')">返回主菜单</button>
       </div>
-      <p class="hint">P / Esc / 空格 = 继续</p>
     </div>
   </div>
 </template>
@@ -59,7 +58,9 @@ defineEmits<{
   color: #fff;
   cursor: pointer;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
-  transition: transform 0.08s, background 0.2s;
+  transition:
+    transform 0.08s,
+    background 0.2s;
   min-width: 160px;
 }
 
@@ -89,11 +90,5 @@ defineEmits<{
 
 .btn.ghost:hover {
   background: rgba(255, 255, 255, 0.1);
-}
-
-.hint {
-  margin: 20px 0 0;
-  font-size: 13px;
-  opacity: 0.6;
 }
 </style>

@@ -10,7 +10,11 @@ const isNewBest = computed(() => props.score >= props.best && props.score > 0)
 <template>
   <div class="overlay" @click.stop>
     <div class="panel">
-      <h1 class="title">Game Over</h1>
+      <h1 class="title">
+        <span class="sym">✕</span>
+        Game Over
+        <span class="sym">✕</span>
+      </h1>
       <div class="scores">
         <div class="row">
           <span class="label">本局</span>
@@ -22,12 +26,14 @@ const isNewBest = computed(() => props.score >= props.best && props.score > 0)
         </div>
         <div v-if="isNewBest" class="new-best">新纪录！</div>
       </div>
-      <button class="btn btn-primary" @click="$emit('restart')">
-        再来一局
-      </button>
-      <button class="btn btn-secondary" @click="$emit('menu')">
-        回到主菜单
-      </button>
+      <div class="btns">
+        <button class="btn btn-primary" @click="$emit('restart')">
+          再来一局
+        </button>
+        <button class="btn btn-secondary" @click="$emit('menu')">
+          回到主菜单
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -41,6 +47,12 @@ const isNewBest = computed(() => props.score >= props.best && props.score > 0)
   justify-content: center;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(3px);
+  overflow-y: auto;
+  /* 避开手机刘海/底部横条安全区，按钮不贴视口边缘 */
+  padding: calc(12px + env(safe-area-inset-top))
+    calc(16px + env(safe-area-inset-right))
+    calc(16px + env(safe-area-inset-bottom))
+    calc(16px + env(safe-area-inset-left));
 }
 .panel {
   text-align: center;
@@ -51,6 +63,10 @@ const isNewBest = computed(() => props.score >= props.best && props.score > 0)
   font-size: 40px;
   margin: 0 0 20px;
   letter-spacing: 3px;
+}
+.title .sym {
+  color: #ff6b6b;
+  font-size: 0.85em;
 }
 .scores {
   margin-bottom: 28px;
@@ -92,6 +108,12 @@ const isNewBest = computed(() => props.score >= props.best && props.score > 0)
     transform: scale(1);
   }
 }
+.btns {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
 .btn {
   padding: 12px 36px;
   font-size: 18px;
@@ -116,5 +138,41 @@ const isNewBest = computed(() => props.score >= props.best && props.score > 0)
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* 触屏小屏（横屏手机）：按钮横排，整体紧凑，远离窗口边缘 */
+@media (pointer: coarse), (max-height: 420px) {
+  .overlay {
+    padding: calc(24px + env(safe-area-inset-top))
+      calc(32px + env(safe-area-inset-right))
+      calc(24px + env(safe-area-inset-bottom))
+      calc(32px + env(safe-area-inset-left));
+  }
+  .title {
+    font-size: 26px;
+    margin-bottom: 10px;
+  }
+  .scores {
+    margin-bottom: 14px;
+  }
+  .row {
+    font-size: 15px;
+    margin: 3px 0;
+  }
+  .new-best {
+    font-size: 13px;
+    margin-top: 5px;
+  }
+  .btns {
+    flex-direction: row;
+    justify-content: center;
+    gap: 18px;
+  }
+  .btn {
+    padding: 9px 20px;
+    font-size: 14px;
+    min-width: 110px;
+    margin: 0;
+  }
 }
 </style>

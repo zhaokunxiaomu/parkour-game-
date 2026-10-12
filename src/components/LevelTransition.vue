@@ -2,10 +2,18 @@
 import { onMounted, ref } from 'vue'
 import type { Level } from '../game'
 
-const props = defineProps<{ level: Level; index: number; total: number }>()
+const props = defineProps<{
+  level: Level
+  index: number
+  total: number
+  manual?: boolean // 第一关提示：无进度条，点按钮开始
+}>()
+
+const emit = defineEmits<{ (e: 'start'): void }>()
 
 const progress = ref(0)
 onMounted(() => {
+  if (props.manual) return // 手动模式不跑倒计时
   const start = performance.now()
   const dur = 3500 // 和引擎 TRANSITION_FRAMES=240（≈4s）对齐，略短让进度先填满
   const tick = (now: number) => {
@@ -23,10 +31,19 @@ onMounted(() => {
       <h1 class="title">{{ level.name }}</h1>
       <p class="desc">{{ level.description }}</p>
       <p class="target">目标得分：{{ level.targetScore }}</p>
-      <div class="progress-bar">
-        <div class="progress-fill" :style="{ width: progress * 100 + '%' }" />
-      </div>
-      <p class="hint">准备好 ——</p>
+
+      <!-- 第一关：手动开始按钮 -->
+      <template v-if="manual">
+        <button class="btn" @click="emit('start')">开始</button>
+      </template>
+
+      <!-- 后续关卡：自动倒计时进度条 -->
+      <template v-else>
+        <div class="progress-bar">
+          <div class="progress-fill" :style="{ width: progress * 100 + '%' }" />
+        </div>
+        <p class="hint">准备好 ——</p>
+      </template>
     </div>
   </div>
 </template>
@@ -80,6 +97,25 @@ onMounted(() => {
   margin: 0 0 24px;
   font-size: 14px;
   opacity: 0.7;
+}
+
+.btn {
+  padding: 12px 40px;
+  margin-bottom: 14px;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffd700, #ffa500);
+  color: #2c3e50;
+  cursor: pointer;
+  text-shadow: none;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+  transition: transform 0.08s;
+}
+.btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
 }
 
 .progress-bar {

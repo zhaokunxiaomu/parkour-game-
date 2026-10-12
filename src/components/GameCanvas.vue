@@ -72,6 +72,9 @@ function resume() {
 function restart() {
   game?.restart()
 }
+function returnToMenu() {
+  game?.returnToMenu()
+}
 function jump() {
   game?.jump()
 }
@@ -83,6 +86,12 @@ function dash() {
 }
 function gotoLevel(index: number) {
   game?.gotoLevel(index)
+}
+function beginPlay() {
+  game?.beginPlay()
+}
+function isIntroPending(): boolean {
+  return game?.isIntroPending() ?? false
 }
 function setSfxEnabled(v: boolean) {
   game?.setSfxEnabled(v)
@@ -106,9 +115,12 @@ function getLevelProgress(): {
 
 defineExpose({
   start,
+  beginPlay,
+  isIntroPending,
   pause,
   resume,
   restart,
+  returnToMenu,
   jump,
   crouch,
   dash,

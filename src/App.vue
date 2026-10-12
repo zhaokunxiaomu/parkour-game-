@@ -6,7 +6,6 @@ import GameOverScreen from './components/GameOverScreen.vue'
 import PauseScreen from './components/PauseScreen.vue'
 import LevelTransition from './components/LevelTransition.vue'
 import VictoryScreen from './components/VictoryScreen.vue'
-import LevelSelect from './components/LevelSelect.vue'
 import ScoreHUD from './components/ScoreHUD.vue'
 import type { GameState, Level, PickupType } from './game'
 import { LEVELS } from './game'
@@ -23,8 +22,8 @@ const best = ref(0)
 const levelIndex = ref(0)
 const currentLevel = ref<Level>(LEVELS[0])
 const progressRatio = ref(0) // 关卡进度 0~1
+const introPending = ref(false) // transition 期间是否为开局提示
 
-const showLevelSelect = ref(false) // 主菜单显示关卡选择
 const sfxEnabled = ref(true)
 
 /** 道具状态 */
@@ -103,12 +102,11 @@ function onKey(e: KeyboardEvent) {
   if (e.code === 'Space' || e.code === 'ArrowUp') {
     e.preventDefault()
     if (state.value === 'playing') handleJump()
-    else if (state.value === 'paused') handleResume()
-    // menu / over / victory：不响应空格，必须点击蒙层按钮
+    // menu / intro / paused / over / victory：不响应空格，必须点击蒙层按钮
   } else if (e.code === 'KeyP' || e.code === 'Escape') {
     e.preventDefault()
     if (state.value === 'playing') handlePause()
-    else if (state.value === 'paused') handleResume()
+    // paused：不响应键盘继续，必须点"继续"按钮
   } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
     e.preventDefault()
     if (state.value === 'playing') gameCanvasRef.value?.crouch(true)
@@ -139,11 +137,8 @@ function handlePause() {
 function handleResume() {
   gameCanvasRef.value?.resume()
 }
-function handleGotoLevel(i: number) {
-  showLevelSelect.value = false
-  gameCanvasRef.value?.gotoLevel(i)
-}
 function handleBackToMenu() {
+  gameCanvasRef.value?.returnToMenu()
   state.value = 'menu'
   progressRatio.value = 0
 }
@@ -159,6 +154,8 @@ function onScore(s: number) {
 }
 function onState(s: GameState) {
   state.value = s
+  if (s === 'transition')
+    introPending.value = gameCanvasRef.value?.isIntroPending() ?? false
 }
 function onGameOver(s: number) {
   isShielded.value = false // 游戏结束清护盾 UI
@@ -180,13 +177,14 @@ function onPickup(type: PickupType) {
 
 function handleStart() {
   isShielded.value = false
-  showLevelSelect.value = false
   gameCanvasRef.value?.start()
 }
 function handleRestart() {
   isShielded.value = false
-  showLevelSelect.value = false
   gameCanvasRef.value?.restart()
+}
+function handleBeginPlay() {
+  gameCanvasRef.value?.beginPlay()
 }
 function onLevelChange(i: number, lv: Level) {
   levelIndex.value = i
@@ -201,6 +199,15 @@ const showStart = computed(() => state.value === 'menu')
 const showOver = computed(() => state.value === 'over')
 const showPaused = computed(() => state.value === 'paused')
 const showTransition = computed(() => state.value === 'transition')
+/** 第一关开局提示：无进度条、点按钮开始 */
+const isIntroTransition = computed(
+  () => state.value === 'transition' && introPending.value
+)
+/** 过渡蒙层展示的关卡：过关过渡时展示下一关，开局提示展示当前关 */
+const transitionLevelIndex = computed(() =>
+  isIntroTransition.value ? levelIndex.value : levelIndex.value + 1
+)
+const transitionLevel = computed(() => LEVELS[transitionLevelIndex.value])
 const showVictory = computed(() => state.value === 'victory')
 const showHUD = computed(() => state.value === 'playing')
 const showPauseBtn = computed(() => state.value === 'playing')
@@ -210,8 +217,6 @@ const showLevelInfo = computed(
     state.value === 'paused' ||
     state.value === 'transition'
 )
-const showLevelSelectBtn = computed(() => state.value === 'menu')
-
 function onCanvasClick() {
   if (state.value === 'playing') handleJump()
 }
@@ -280,7 +285,7 @@ function onCanvasClick() {
         <span>暂停 P</span>
       </div>
 
-      <!-- 右上角控制：暂停 / 音效 -->
+      <!-- 右上角控制：暂停 -->
       <button
         v-if="showPauseBtn"
         class="ctrl-btn pause-btn"
@@ -288,21 +293,6 @@ function onCanvasClick() {
         title="暂停 (P)"
       >
         ‖
-      </button>
-      <button
-        v-if="state !== 'menu'"
-        class="ctrl-btn sfx-btn"
-        @click.stop="toggleSfx"
-        :title="sfxEnabled ? '关闭音效' : '开启音效'"
-      >
-        {{ sfxEnabled ? '🔊' : '🔇' }}
-      </button>
-      <button
-        v-if="showLevelSelectBtn"
-        class="ctrl-btn levels-btn"
-        @click.stop="showLevelSelect = true"
-      >
-        关卡
       </button>
 
       <!-- HUD：分数 + 关卡名 + 进度条 -->
@@ -339,8 +329,9 @@ function onCanvasClick() {
         </div>
       </TransitionGroup>
 
-      <!-- 移动端虚拟按钮：下蹲 + 冲刺（playing 时显示） -->
+      <!-- 移动端虚拟按钮：下蹲 + 冲刺 + 跳跃（playing 时显示） -->
       <div v-if="showHUD" class="mobile-virtual">
+        <!-- 左侧：下蹲 -->
         <button
           class="virt-btn virt-crouch"
           @touchstart.prevent="gameCanvasRef?.crouch(true)"
@@ -352,28 +343,39 @@ function onCanvasClick() {
         >
           ↓
         </button>
-        <button
-          class="virt-btn virt-dash"
-          @touchstart.prevent="gameCanvasRef?.dash()"
-          @mousedown="gameCanvasRef?.dash()"
-        >
-          ⚡
-        </button>
+        <!-- 右侧：冲刺 + 跳跃 -->
+        <div class="virt-right-group">
+          <button
+            class="virt-btn virt-dash"
+            @touchstart.prevent="gameCanvasRef?.dash()"
+            @mousedown="gameCanvasRef?.dash()"
+          >
+            ⚡
+          </button>
+          <button
+            class="virt-btn virt-jump"
+            @touchstart.prevent="handleJump()"
+            @mousedown="handleJump()"
+          >
+            ↑
+          </button>
+        </div>
       </div>
 
-      <!-- 蒙层层叠：transition 在最上，因为自动消失；LevelSelect 由按钮触发 -->
-      <Transition name="fade">
-        <LevelSelect
-          v-if="showStart && showLevelSelect"
-          @goto="handleGotoLevel"
-        />
-      </Transition>
-      <StartScreen v-if="showStart && !showLevelSelect" @start="handleStart" />
+      <!-- 蒙层层叠 -->
+      <StartScreen
+        v-if="showStart"
+        :sfx-enabled="sfxEnabled"
+        @start="handleStart"
+        @toggle-sfx="toggleSfx"
+      />
       <LevelTransition
         v-if="showTransition"
-        :level="currentLevel"
-        :index="levelIndex"
+        :level="transitionLevel"
+        :index="transitionLevelIndex"
         :total="LEVELS.length"
+        :manual="isIntroTransition"
+        @start="handleBeginPlay"
       />
       <ScoreHUD v-if="showHUD" :score="score" />
       <PauseScreen
@@ -542,10 +544,6 @@ function onCanvasClick() {
   font-weight: bold;
   color: #2c3e50;
 }
-.sfx-btn {
-  right: 52px;
-  font-size: 18px;
-}
 .levels-btn {
   right: 96px;
   font-size: 13px;
@@ -666,14 +664,21 @@ function onCanvasClick() {
 /* ===== 移动端虚拟按钮 ===== */
 .mobile-virtual {
   position: absolute;
-  bottom: 12px;
-  left: 12px;
-  right: 12px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(88%, 720px);
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   pointer-events: none;
   z-index: 18;
+}
+
+.virt-right-group {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
 }
 
 .virt-btn {
@@ -702,6 +707,9 @@ function onCanvasClick() {
 }
 .virt-dash {
   color: #e67e22;
+}
+.virt-jump {
+  color: #1e90ff;
 }
 
 /* 桌面隐藏虚拟按钮 */

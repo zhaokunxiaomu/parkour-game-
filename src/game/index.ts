@@ -59,6 +59,7 @@ export class Game {
   /** 关卡系统 */
   private levelIndex = 0
   private transitionFrames = 0 // transition 倒计时
+  private introPending = false // 开局第一关提示：倒计时结束后直接开跑，不 advanceLevel
 
   /** 帧控制 */
   private rafId: number | null = null
@@ -108,9 +109,20 @@ export class Game {
     this.resetWorld()
     this.levelIndex = 0
     this.applyLevelTheme()
-    this.state = 'playing'
+    // 开局先展示第一关提示，由玩家点"开始"按钮开跑
+    this.state = 'transition'
+    this.introPending = true
     this.emitState()
     this.emitLevelChange()
+  }
+
+  /** 第一关提示 → 正式开跑（玩家点按钮/按空格触发） */
+  beginPlay(): void {
+    if (this.state !== 'transition' || !this.introPending) return
+    this.introPending = false
+    this.state = 'playing'
+    this.lastTs = performance.now() // 防 dt 巨跳
+    this.emitState()
   }
 
   pause(): void {
@@ -130,14 +142,22 @@ export class Game {
     this.start()
   }
 
+  /** 返回主菜单：复位到第 1 关主题，菜单背景恢复默认草原 */
+  returnToMenu(): void {
+    this.resetWorld()
+    this.levelIndex = 0
+    this.applyLevelTheme()
+    this.state = 'menu'
+    this.emitState()
+    this.emitLevelChange()
+  }
+
   jump(): void {
     if (this.state === 'playing') {
       if (this.player.jump()) sfx.jump()
     } else if (this.state === 'menu') {
       sfx.init()
       this.start()
-      this.player.jump()
-      sfx.jump()
     }
     // over / victory：不响应键盘 jump，必须点蒙层按钮
   }
@@ -184,6 +204,11 @@ export class Game {
 
   getLevelIndex(): number {
     return this.levelIndex
+  }
+
+  /** transition 期间是否为"开局第一关提示"（true=开局，需点按钮；false=过关过渡，自动倒计时） */
+  isIntroPending(): boolean {
+    return this.introPending
   }
 
   getCurrentLevel(): Level {
@@ -309,10 +334,13 @@ export class Game {
         }
       }
     } else if (this.state === 'transition') {
-      this.transitionFrames -= dt
       this.ground.update(1, dt)
-      if (this.transitionFrames <= 0) {
-        this.advanceLevel()
+      // introPending：第一关提示，等玩家点"开始"，不倒计时
+      if (!this.introPending) {
+        this.transitionFrames -= dt
+        if (this.transitionFrames <= 0) {
+          this.advanceLevel()
+        }
       }
     } else if (this.state === 'menu') {
       this.ground.update(2, dt)
@@ -360,7 +388,7 @@ export class Game {
     this.applyLevelTheme()
     this.state = 'playing'
     this.emitState()
-    this.emitLevelChange()
+    this.emitLevelChange() // 真正进入新关卡时才同步主题/背景
   }
 
   private spawnIfNeeded(): void {
@@ -383,8 +411,8 @@ export class Game {
 
   /** 道具生成：不每次都刷，有一定概率在屏幕右侧刷出（金币概率最高） */
   private spawnPickupsIfNeeded(): void {
-    // 不超过 3 个同时存在
-    if (this.pickups.activeList().length >= 3) return
+    // 不超过 8 个同时存在（金币成串出现，需要更大的并发额度）
+    if (this.pickups.activeList().length >= 8) return
 
     const rightmost = Math.max(
       this.obstacles
@@ -394,15 +422,25 @@ export class Game {
     )
 
     // 有概率生成（不是每帧，避免太密集）
-    if (rightmost < this.config.canvasWidth && Math.random() < 0.015) {
+    if (rightmost < this.config.canvasWidth && Math.random() < 0.022) {
       const roll = Math.random()
       const type: PickupType =
         roll < 0.7 ? 'coin' : roll < 0.9 ? 'shield' : 'boost'
       const gap = randInt(200, 450)
       const x = Math.max(this.config.canvasWidth + 30, rightmost + gap)
-      const pk = this.pickups.acquire()
-      pk.setTheme(LEVELS[this.levelIndex].theme)
-      pk.spawn(type, x)
+      if (type === 'coin') {
+        // 金币成串出现：3~5 个横排，收集更爽快
+        const count = randInt(3, 5)
+        for (let i = 0; i < count; i++) {
+          const pk = this.pickups.acquire()
+          pk.setTheme(LEVELS[this.levelIndex].theme)
+          pk.spawn('coin', x + i * 30)
+        }
+      } else {
+        const pk = this.pickups.acquire()
+        pk.setTheme(LEVELS[this.levelIndex].theme)
+        pk.spawn(type, x)
+      }
     }
   }
 

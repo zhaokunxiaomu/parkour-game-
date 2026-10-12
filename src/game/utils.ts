@@ -136,7 +136,7 @@ export const LEVELS: Level[] = [
   },
   {
     theme: 'snow',
-    targetScore: 2000,
+    targetScore: 2500,
     name: '冰雪之巅',
     description: '天寒地冻，尖刺和飞鸟更加凶猛。',
   },
