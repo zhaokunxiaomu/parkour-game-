@@ -48,24 +48,35 @@ const isPortraitTouch = computed(() => {
   return isCoarse && isPortrait
 })
 
-/** 尝试原生横屏：全屏 + 方向锁定（安卓 Chrome 支持，iOS 会失败并走 CSS 旋转兜底） */
-async function tryLockLandscape(): Promise<void> {
-  if (!isPortraitTouch.value) return
+/** 尝试进入全屏（所有触摸设备都尝试，让画面撑满整个屏幕隐藏地址栏） */
+async function tryFullscreen(): Promise<void> {
   try {
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element | null
+    }
     const el = document.documentElement as HTMLElement & {
       webkitRequestFullscreen?: () => Promise<void>
     }
-    if (!document.fullscreenElement) {
-      const req =
-        el.requestFullscreen?.bind(el) ?? el.webkitRequestFullscreen?.bind(el)
-      if (req) await req()
-    }
+    if (doc.fullscreenElement || doc.webkitFullscreenElement) return
+    const req =
+      el.requestFullscreen?.bind(el) ?? el.webkitRequestFullscreen?.bind(el)
+    if (req) await req()
+  } catch {
+    /* iOS Safari 不支持，静默失败 */
+  }
+}
+
+/** 竖屏触摸设备：全屏后再尝试方向锁定（安卓 Chrome 有效，iOS 失败） */
+async function tryLockLandscape(): Promise<void> {
+  if (!isPortraitTouch.value) return
+  await tryFullscreen()
+  try {
     const so = screen.orientation as ScreenOrientation & {
       lock?: (o: string) => Promise<void>
     }
     if (so?.lock) await so.lock('landscape')
   } catch {
-    /* 浏览器不支持 → 保持竖屏，由 CSS 旋转 90° 呈现横屏画面 */
+    /* 浏览器不支持 → 由 CSS 旋转 90° 呈现横屏画面 */
   }
 }
 // 监听旋转 / 尺寸变化，更新响应式数据
@@ -198,15 +209,18 @@ function onPickup(type: PickupType) {
 
 function handleStart() {
   isShielded.value = false
+  tryFullscreen()
   tryLockLandscape()
   gameCanvasRef.value?.start()
 }
 function handleRestart() {
   isShielded.value = false
+  tryFullscreen()
   tryLockLandscape()
   gameCanvasRef.value?.restart()
 }
 function handleBeginPlay() {
+  tryFullscreen()
   tryLockLandscape()
   gameCanvasRef.value?.beginPlay()
 }
