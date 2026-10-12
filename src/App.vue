@@ -104,6 +104,9 @@ function stopProgressTicker() {
   }
 }
 
+/** 首次用户手势必触发全屏 + 方向锁定（浏览器唯一放行全屏调用的时机） */
+let onceOnFirstGesture: (() => void) | null = null
+
 onMounted(() => {
   const saved = Number(localStorage.getItem(BEST_KEY) || 0)
   if (!Number.isNaN(saved)) best.value = saved
@@ -112,7 +115,27 @@ onMounted(() => {
 
   window.addEventListener('keydown', onKey)
   window.addEventListener('keyup', onKeyUp)
+
+  // 页面挂载后立即尝试一次全屏（某些 WebView/PWA 允许无手势调用）
+  tryFullscreen()
+  // 首次用户手势（点击/触摸/按键）必触发全屏 —— 这是浏览器唯一放行的时机
+  onceOnFirstGesture = () => {
+    tryFullscreen()
+    tryLockLandscape()
+    cleanupFirstGestureListener()
+  }
+  document.addEventListener('click', onceOnFirstGesture, true)
+  document.addEventListener('touchstart', onceOnFirstGesture, true)
+  document.addEventListener('keydown', onceOnFirstGesture, true)
 })
+
+function cleanupFirstGestureListener() {
+  if (!onceOnFirstGesture) return
+  document.removeEventListener('click', onceOnFirstGesture, true)
+  document.removeEventListener('touchstart', onceOnFirstGesture, true)
+  document.removeEventListener('keydown', onceOnFirstGesture, true)
+  onceOnFirstGesture = null
+}
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey)
@@ -120,6 +143,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('orientationchange', updateViewport)
   window.removeEventListener('resize', updateViewport)
   stopProgressTicker()
+  cleanupFirstGestureListener()
 })
 
 // 状态切换时控制进度条
