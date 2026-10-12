@@ -40,13 +40,34 @@ function updateViewport() {
   viewport.value = { w: window.innerWidth, h: window.innerHeight }
 }
 
-/** 竖屏触摸设备检测 → 显示旋转提示 */
+/** 竖屏触摸设备检测 → CSS 旋转兜底（安卓 Chrome 会优先尝试原生横屏锁定） */
 const isPortraitTouch = computed(() => {
   if (typeof window === 'undefined') return false
   const isCoarse = window.matchMedia('(pointer: coarse)').matches
   const isPortrait = viewport.value.h > viewport.value.w
   return isCoarse && isPortrait
 })
+
+/** 尝试原生横屏：全屏 + 方向锁定（安卓 Chrome 支持，iOS 会失败并走 CSS 旋转兜底） */
+async function tryLockLandscape(): Promise<void> {
+  if (!isPortraitTouch.value) return
+  try {
+    const el = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void>
+    }
+    if (!document.fullscreenElement) {
+      const req =
+        el.requestFullscreen?.bind(el) ?? el.webkitRequestFullscreen?.bind(el)
+      if (req) await req()
+    }
+    const so = screen.orientation as ScreenOrientation & {
+      lock?: (o: string) => Promise<void>
+    }
+    if (so?.lock) await so.lock('landscape')
+  } catch {
+    /* 浏览器不支持 → 保持竖屏，由 CSS 旋转 90° 呈现横屏画面 */
+  }
+}
 // 监听旋转 / 尺寸变化，更新响应式数据
 if (typeof window !== 'undefined') {
   window.addEventListener('orientationchange', updateViewport)
@@ -177,13 +198,16 @@ function onPickup(type: PickupType) {
 
 function handleStart() {
   isShielded.value = false
+  tryLockLandscape()
   gameCanvasRef.value?.start()
 }
 function handleRestart() {
   isShielded.value = false
+  tryLockLandscape()
   gameCanvasRef.value?.restart()
 }
 function handleBeginPlay() {
+  tryLockLandscape()
   gameCanvasRef.value?.beginPlay()
 }
 function onLevelChange(i: number, lv: Level) {
@@ -223,45 +247,9 @@ function onCanvasClick() {
 </script>
 
 <template>
-  <!-- 竖屏旋转提示 -->
-  <Transition name="fade">
-    <div v-if="isPortraitTouch" class="rotate-hint">
-      <div class="rotate-icon">
-        <!-- 手机旋转 SVG -->
-        <svg
-          viewBox="0 0 64 64"
-          width="96"
-          height="96"
-          fill="none"
-          stroke="#fff"
-          stroke-width="3"
-        >
-          <rect
-            x="14"
-            y="6"
-            width="36"
-            height="52"
-            rx="5"
-            transform="rotate(-35 32 32)"
-          />
-          <line
-            x1="32"
-            y1="46"
-            x2="32"
-            y2="52"
-            stroke-linecap="round"
-            transform="rotate(-35 32 32)"
-          />
-        </svg>
-      </div>
-      <div class="rotate-title">请横屏使用</div>
-      <div class="rotate-desc">将手机旋转到横向，获得更好的游戏体验</div>
-    </div>
-  </Transition>
-
   <div
     class="app"
-    :class="{ 'app-blurred': isPortraitTouch }"
+    :class="{ 'app-rotated': isPortraitTouch }"
     :style="{ background: wrapperBg }"
   >
     <div class="game-wrapper">
@@ -449,65 +437,15 @@ function onCanvasClick() {
   }
 }
 
-/* ===== 竖屏旋转提示 ===== */
-.app-blurred {
-  filter: blur(4px);
-  pointer-events: none;
-  user-select: none;
-}
-.rotate-hint {
+/* ===== 竖屏自动横屏：CSS 旋转 90° 兜底（iOS 等不支持方向锁定的浏览器） ===== */
+.app-rotated {
   position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-  color: #fff;
-  text-align: center;
-  padding: 24px;
-}
-.rotate-icon {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 24px;
-  animation: pulse 1.8s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.9;
-  }
-  50% {
-    transform: scale(1.08);
-    opacity: 1;
-  }
-}
-.rotate-title {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  margin-bottom: 8px;
-}
-.rotate-desc {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
-  line-height: 1.5;
-}
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+  top: 0;
+  left: 0;
+  width: 100dvh;
+  height: 100vw;
+  transform: rotate(90deg) translateY(-100%);
+  transform-origin: left top;
 }
 
 /* 控制按钮：统一圆形样式 */

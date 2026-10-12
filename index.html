@@ -8,9 +8,86 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>跑酷大冒险</title>
+    <style>
+      /* 首屏加载骨架：JS bundle 下载期间显示，Vue 挂载后淡出 */
+      #boot-loading {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        background: linear-gradient(180deg, #87ceeb 0%, #b8e0f0 100%);
+        transition: opacity 0.35s ease;
+      }
+      #boot-loading .boot-runner {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: #2c3e50;
+        position: relative;
+        animation: boot-bounce 0.7s ease-in-out infinite alternate;
+      }
+      #boot-loading .boot-runner::before {
+        content: '';
+        position: absolute;
+        top: 10px;
+        right: 9px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #fff;
+      }
+      #boot-loading .boot-text {
+        font:
+          600 15px/1 system-ui,
+          -apple-system,
+          sans-serif;
+        color: #2c3e50;
+        letter-spacing: 2px;
+      }
+      #boot-loading .boot-bar {
+        width: 140px;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(44, 62, 80, 0.18);
+        overflow: hidden;
+      }
+      #boot-loading .boot-bar i {
+        display: block;
+        width: 40%;
+        height: 100%;
+        border-radius: 2px;
+        background: #2c3e50;
+        animation: boot-slide 1s linear infinite;
+      }
+      @keyframes boot-bounce {
+        from {
+          transform: translateY(0);
+        }
+        to {
+          transform: translateY(-16px);
+        }
+      }
+      @keyframes boot-slide {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(350%);
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>
+    <div id="boot-loading">
+      <div class="boot-runner"></div>
+      <div class="boot-text">跑酷大冒险</div>
+      <div class="boot-bar"><i></i></div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
