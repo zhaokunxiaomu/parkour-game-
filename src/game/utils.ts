@@ -124,25 +124,25 @@ export const THEMES: Record<
 export const LEVELS: Level[] = [
   {
     theme: 'day',
-    targetScore: 200,
+    targetScore: 500,
     name: '日间草原',
     description: '晴朗的草原上，热身出发吧！',
   },
   {
     theme: 'desert',
-    targetScore: 400,
+    targetScore: 1200,
     name: '荒漠峡谷',
     description: '烈日炎炎，小心滚石和仙人掌。',
   },
   {
     theme: 'snow',
-    targetScore: 600,
+    targetScore: 2000,
     name: '冰雪之巅',
     description: '天寒地冻，尖刺和飞鸟更加凶猛。',
   },
   {
     theme: 'night',
-    targetScore: 2000,
+    targetScore: 5000,
     name: '星空夜色',
     description: '终极挑战，坚持到底成为跑酷之王！',
   },

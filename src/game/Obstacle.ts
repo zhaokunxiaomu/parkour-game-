@@ -241,7 +241,13 @@ export class ObstaclePool {
   }
 
   reset(): void {
-    for (const p of this.pool) p.active = false
+    for (const o of this.pool) o.active = false
+  }
+
+  /** 画布尺寸变化时调用 —— 更新内部 config 的 canvasWidth/Height */
+  updateConfig(canvasWidth: number, canvasHeight: number): void {
+    this.config.canvasWidth = canvasWidth
+    this.config.canvasHeight = canvasHeight
   }
 
   setTheme(theme: Theme): void {

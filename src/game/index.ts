@@ -27,8 +27,8 @@ export { LEVELS } from './utils'
 /** 默认配置 */
 export const DEFAULT_CONFIG: GameConfig = {
   canvasWidth: 900,
-  canvasHeight: 300,
-  groundY: 240,
+  canvasHeight: 400, // ← 300→400，给跳跃更多垂直空间
+  groundY: 340,
   gravity: 0.6,
   jumpVelocity: -13,
   baseSpeed: 5,
@@ -43,6 +43,7 @@ const TRANSITION_FRAMES = 240
 
 export class Game {
   private ctx: CanvasRenderingContext2D
+  private canvas: HTMLCanvasElement
   private config: GameConfig
   private callbacks: GameCallbacks
 
@@ -69,7 +70,9 @@ export class Game {
     callbacks: GameCallbacks = {},
     config: Partial<GameConfig> = {}
   ) {
+    this.canvas = canvas
     this.ctx = canvas.getContext('2d')!
+    // config 的 canvasWidth/canvasHeight 来自 DEFAULT_CONFIG（900×300）
     this.config = { ...DEFAULT_CONFIG, ...config }
     this.callbacks = callbacks
 
@@ -135,11 +138,8 @@ export class Game {
       this.start()
       this.player.jump()
       sfx.jump()
-    } else if (this.state === 'over') {
-      this.restart()
-    } else if (this.state === 'victory') {
-      this.restart()
     }
+    // over / victory：不响应键盘 jump，必须点蒙层按钮
   }
 
   /** 下蹲（按住 = on=true，松开 = on=false，持续状态） */
@@ -154,6 +154,13 @@ export class Game {
     if (this.player.tryDash()) {
       sfx.dash()
     }
+  }
+
+  /** 画布尺寸变化时调用 —— 内部逻辑像素不变（900×300），只更新 canvas.width/height */
+  resize(w: number, h: number): void {
+    if (this.canvas.width === w && this.canvas.height === h) return
+    this.canvas.width = w
+    this.canvas.height = h
   }
 
   /** 切到指定关卡（供外部关卡选择器调用） */
@@ -245,7 +252,9 @@ export class Game {
       )
 
       // 冲刺：视觉速度 × DASH_SPEED_MULT，但基础 speed 不变（冲刺结束后速度曲线连续）
-      const renderSpeed = this.speed * (this.player.isDashingNow() ? this.player.DASH_SPEED_MULT : 1)
+      const renderSpeed =
+        this.speed *
+        (this.player.isDashingNow() ? this.player.DASH_SPEED_MULT : 1)
 
       // 分数（用基础 speed，冲刺不额外刷分）
       this.score += (this.speed * dt) / 10
@@ -278,18 +287,14 @@ export class Game {
         }
       }
 
-      // obstacle 碰撞（deadly 类型）
-      // dash 中玩家无敌（穿越障碍），不用 shield 挡
-      if (!this.player.isDashingNow()) {
-        for (const ob of this.obstacles.activeList()) {
-          if (ob.category === 'deadly' && aabb(pBox, ob.getHitbox())) {
-            if (this.player.consumeShield()) {
-              // 护盾消耗一次，免死
-              sfx.shieldHit()
-            } else {
-              this.gameOver()
-              return
-            }
+      // obstacle 碰撞（deadly 类型）—— 冲刺也得躲障碍
+      for (const ob of this.obstacles.activeList()) {
+        if (ob.category === 'deadly' && aabb(pBox, ob.getHitbox())) {
+          if (this.player.consumeShield()) {
+            sfx.shieldHit()
+          } else {
+            this.gameOver()
+            return
           }
         }
       }
@@ -385,9 +390,7 @@ export class Game {
       this.obstacles
         .activeList()
         .reduce((max, o) => Math.max(max, o.x + o.w), 0),
-      this.pickups
-        .activeList()
-        .reduce((max, p) => Math.max(max, p.x + p.w), 0)
+      this.pickups.activeList().reduce((max, p) => Math.max(max, p.x + p.w), 0)
     )
 
     // 有概率生成（不是每帧，避免太密集）
@@ -406,7 +409,7 @@ export class Game {
   /** 收集道具 → 执行效果 + 回调 */
   private collectPickup(type: PickupType): void {
     if (type === 'coin') {
-      this.score += 20   // 金币 +20 分
+      this.score += 20 // 金币 +20 分
       sfx.coin()
     } else if (type === 'shield') {
       this.player.giveShield()
@@ -490,7 +493,6 @@ export class Game {
     ctx.clearRect(0, 0, config.canvasWidth, config.canvasHeight)
 
     this.ground.draw(ctx)
-    // 道具在障碍物后面画（视觉上道具更靠天空层）
     for (const p of this.pickups.activeList()) {
       p.draw(ctx)
     }

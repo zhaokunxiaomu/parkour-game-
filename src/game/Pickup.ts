@@ -171,6 +171,12 @@ export class PickupPool {
     for (const p of this.pool) p.active = false
   }
 
+  /** 画布尺寸变化时调用 —— 更新内部 config 的 canvasWidth/Height */
+  updateConfig(canvasWidth: number, canvasHeight: number): void {
+    this.config.canvasWidth = canvasWidth
+    this.config.canvasHeight = canvasHeight
+  }
+
   setTheme(theme: Theme): void {
     for (const p of this.pool) p.setTheme(theme)
   }

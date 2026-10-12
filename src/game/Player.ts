@@ -74,6 +74,11 @@ export class Player {
     this.hasShield = false
   }
 
+  /** 画布尺寸变化时调用 —— 保持玩家位置在 canvas 宽度的 20% 处 */
+  resize(canvasWidth: number): void {
+    this.x = canvasWidth * 0.2
+  }
+
   // ===== 跳跃（含二段跳） =====
 
   jump(): boolean {
@@ -81,10 +86,10 @@ export class Player {
       this.vy = this.jumpVelocity
       this.onGround = false
       this.standingOn = null
-      this.canDoubleJump = true // 刚起跳，二段跳可用
+      this.canDoubleJump = true
       return true
     } else if (this.canDoubleJump) {
-      // 二段跳：力度略小一点
+      // 二段跳：力度略小一点，手感连贯又不至于太夸张
       this.vy = this.jumpVelocity * 0.85
       this.canDoubleJump = false
       return true
@@ -148,6 +153,10 @@ export class Player {
       this.onGround = true
       this.canDoubleJump = true
       this.y = ob.getTopY() - this.h
+      this.vy = 0
+    } else if (changed) {
+      // 刚离开平台：让重力接管，走自由下落动画
+      this.onGround = false
       this.vy = 0
     }
     return changed

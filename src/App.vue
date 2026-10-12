@@ -10,6 +10,10 @@ import LevelSelect from './components/LevelSelect.vue'
 import ScoreHUD from './components/ScoreHUD.vue'
 import type { GameState, Level, PickupType } from './game'
 import { LEVELS } from './game'
+import { THEMES } from './game/utils'
+
+/** 根据当前关卡主题算出画布外围的背景色，保证各关卡画面无缝融合 */
+const wrapperBg = computed(() => THEMES[currentLevel.value.theme].skyTop)
 
 const gameCanvasRef = ref<InstanceType<typeof GameCanvas> | null>(null)
 const state = ref<GameState>('menu')
@@ -27,6 +31,28 @@ const sfxEnabled = ref(true)
 const floatTexts = ref<{ id: number; type: PickupType; text: string }[]>([])
 let floatId = 0
 const isShielded = ref(false) // 是否激活护盾（UI 显示用）
+
+/** 响应式窗口尺寸，让 computed 能追踪横竖屏切换 */
+const viewport = ref({
+  w: typeof window !== 'undefined' ? window.innerWidth : 0,
+  h: typeof window !== 'undefined' ? window.innerHeight : 0,
+})
+function updateViewport() {
+  viewport.value = { w: window.innerWidth, h: window.innerHeight }
+}
+
+/** 竖屏触摸设备检测 → 显示旋转提示 */
+const isPortraitTouch = computed(() => {
+  if (typeof window === 'undefined') return false
+  const isCoarse = window.matchMedia('(pointer: coarse)').matches
+  const isPortrait = viewport.value.h > viewport.value.w
+  return isCoarse && isPortrait
+})
+// 监听旋转 / 尺寸变化，更新响应式数据
+if (typeof window !== 'undefined') {
+  window.addEventListener('orientationchange', updateViewport)
+  window.addEventListener('resize', updateViewport)
+}
 
 const BEST_KEY = 'parkour-best-score'
 const SFX_KEY = 'parkour-sfx-enabled'
@@ -60,6 +86,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey)
   window.removeEventListener('keyup', onKeyUp)
+  window.removeEventListener('orientationchange', updateViewport)
+  window.removeEventListener('resize', updateViewport)
   stopProgressTicker()
 })
 
@@ -76,12 +104,7 @@ function onKey(e: KeyboardEvent) {
     e.preventDefault()
     if (state.value === 'playing') handleJump()
     else if (state.value === 'paused') handleResume()
-    else if (
-      state.value === 'menu' ||
-      state.value === 'over' ||
-      state.value === 'victory'
-    )
-      handleStart()
+    // menu / over / victory：不响应空格，必须点击蒙层按钮
   } else if (e.code === 'KeyP' || e.code === 'Escape') {
     e.preventDefault()
     if (state.value === 'playing') handlePause()
@@ -195,15 +218,51 @@ function onCanvasClick() {
 </script>
 
 <template>
-  <div class="app">
-    <header class="header">
-      <h1 class="app-title">跑酷大冒险</h1>
-      <p class="app-sub">空格/↑=跳跃　↓/S=下蹲　Shift=冲刺　P/Esc=暂停</p>
-    </header>
+  <!-- 竖屏旋转提示 -->
+  <Transition name="fade">
+    <div v-if="isPortraitTouch" class="rotate-hint">
+      <div class="rotate-icon">
+        <!-- 手机旋转 SVG -->
+        <svg
+          viewBox="0 0 64 64"
+          width="96"
+          height="96"
+          fill="none"
+          stroke="#fff"
+          stroke-width="3"
+        >
+          <rect
+            x="14"
+            y="6"
+            width="36"
+            height="52"
+            rx="5"
+            transform="rotate(-35 32 32)"
+          />
+          <line
+            x1="32"
+            y1="46"
+            x2="32"
+            y2="52"
+            stroke-linecap="round"
+            transform="rotate(-35 32 32)"
+          />
+        </svg>
+      </div>
+      <div class="rotate-title">请横屏使用</div>
+      <div class="rotate-desc">将手机旋转到横向，获得更好的游戏体验</div>
+    </div>
+  </Transition>
 
+  <div
+    class="app"
+    :class="{ 'app-blurred': isPortraitTouch }"
+    :style="{ background: wrapperBg }"
+  >
     <div class="game-wrapper">
       <GameCanvas
         ref="gameCanvasRef"
+        :theme="currentLevel.theme"
         @click="onCanvasClick"
         @score="onScore"
         @state="onState"
@@ -212,6 +271,14 @@ function onCanvasClick() {
         @victory="onVictory"
         @pickup="onPickup"
       />
+
+      <!-- 右下角键盘操作提示：playing/paused 时显示，半透明不挡视线 -->
+      <div v-if="state === 'playing' || state === 'paused'" class="hint-corner">
+        <span>跳跃 空格/↑</span>
+        <span>下蹲 ↓/S</span>
+        <span>冲刺 Shift</span>
+        <span>暂停 P</span>
+      </div>
 
       <!-- 右上角控制：暂停 / 音效 -->
       <button
@@ -320,6 +387,7 @@ function onCanvasClick() {
         :score="score"
         :best="best"
         @restart="handleRestart"
+        @menu="handleBackToMenu"
       />
       <VictoryScreen
         v-if="showVictory"
@@ -333,40 +401,111 @@ function onCanvasClick() {
 
 <style scoped>
 .app {
+  width: 100vw;
   height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  padding: clamp(8px, 2vh, 24px) clamp(8px, 2vw, 24px);
-  box-sizing: border-box;
   overflow: hidden;
-}
-
-.header {
-  text-align: center;
-  flex-shrink: 0;
-}
-.app-title {
-  margin: 0 0 2px;
-  font-size: clamp(18px, 3.5vw, 32px);
-  letter-spacing: 2px;
-  color: #2c3e50;
-}
-.app-sub {
-  margin: 0;
-  font-size: clamp(11px, 1.8vw, 15px);
-  color: #7f8c8d;
+  /* wrapper 背景就是天空色 —— 游戏区外的外围会透出此色 */
+  background: #87ceeb;
 }
 
 .game-wrapper {
   position: relative;
-  margin: clamp(8px, 2vh, 24px) auto 0;
   width: 100%;
-  aspect-ratio: 3 / 1;
-  max-height: calc(100dvh - clamp(60px, 10vh, 100px));
-  max-width: calc((100dvh - clamp(60px, 10vh, 100px)) * 3);
+  height: 100%;
+  /* canvas 的 CSS 尺寸和 wrapper 一样，canvas 内部像素 900×300
+     靠 object-fit: contain 自动等比缩放居中，外围透出 app 的天空色 */
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
+}
+
+/* 右下角键盘操作提示（playing / paused 时显示） */
+.hint-corner {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  gap: 10px;
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  border-radius: 14px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+  line-height: 1;
+  white-space: nowrap;
+}
+.hint-corner span {
+  padding: 2px 0;
+}
+/* 桌面显示，移动端隐藏（有虚拟按钮） */
+@media (pointer: coarse) {
+  .hint-corner {
+    display: none;
+  }
+}
+
+/* ===== 竖屏旋转提示 ===== */
+.app-blurred {
+  filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
+}
+.rotate-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  color: #fff;
+  text-align: center;
+  padding: 24px;
+}
+.rotate-icon {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+.rotate-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+.rotate-desc {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 /* 控制按钮：统一圆形样式 */

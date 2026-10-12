@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 const props = defineProps<{ score: number; best: number }>()
-defineEmits<{ (e: 'restart'): void }>()
+defineEmits<{ (e: 'restart'): void; (e: 'menu'): void }>()
 
 const isNewBest = computed(() => props.score >= props.best && props.score > 0)
 </script>
@@ -22,7 +22,12 @@ const isNewBest = computed(() => props.score >= props.best && props.score > 0)
         </div>
         <div v-if="isNewBest" class="new-best">新纪录！</div>
       </div>
-      <button class="btn" @click="$emit('restart')">再来一局</button>
+      <button class="btn btn-primary" @click="$emit('restart')">
+        再来一局
+      </button>
+      <button class="btn btn-secondary" @click="$emit('menu')">
+        回到主菜单
+      </button>
     </div>
   </div>
 </template>
@@ -57,33 +62,59 @@ const isNewBest = computed(() => props.score >= props.best && props.score > 0)
   font-size: 20px;
   margin: 6px 0;
 }
-.row .label { opacity: 0.7; }
-.row .value { font-weight: bold; min-width: 60px; text-align: right; }
-.row .value.best { color: #FFD700; }
+.row .label {
+  opacity: 0.7;
+}
+.row .value {
+  font-weight: bold;
+  min-width: 60px;
+  text-align: right;
+}
+.row .value.best {
+  color: #ffd700;
+}
 .new-best {
-  color: #FFD700;
+  color: #ffd700;
   font-size: 16px;
   margin-top: 10px;
   animation: pop 0.6s ease-out;
 }
 @keyframes pop {
-  0% { transform: scale(0.5); opacity: 0; }
-  60% { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 .btn {
   padding: 12px 36px;
   font-size: 18px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #2ed573, #1e90ff);
-  color: #fff;
   cursor: pointer;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
   transition: transform 0.08s;
+  display: block;
+  margin: 10px auto 0;
+  min-width: 180px;
 }
 .btn:active {
   transform: translateY(2px);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+.btn-primary {
+  background: linear-gradient(135deg, #2ed573, #1e90ff);
+  color: #fff;
+}
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 </style>

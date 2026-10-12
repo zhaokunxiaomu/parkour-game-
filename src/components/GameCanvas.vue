@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { Game } from '../game'
-import type { GameState, Level, PickupType } from '../game'
+import type { Theme, GameState, Level, PickupType } from '../game'
+import { THEMES } from '../game/utils'
+
+const props = defineProps<{
+  theme?: Theme
+}>()
 
 const emit = defineEmits<{
   (e: 'score', v: number): void
@@ -14,9 +19,27 @@ const emit = defineEmits<{
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let game: Game | null = null
+let resizeObserver: ResizeObserver | null = null
+
+/** 根据关卡 theme 同步 canvas CSS 背景，与游戏内天空色无缝衔接 */
+function applyThemeBg(theme: Theme): void {
+  if (canvasRef.value) {
+    canvasRef.value.style.background = THEMES[theme].skyTop
+  }
+}
+
+watch(
+  () => props.theme,
+  (t) => {
+    if (t) applyThemeBg(t)
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   if (!canvasRef.value) return
+
+  // 构造 Game：逻辑像素永远 900×300
   game = new Game(canvasRef.value, {
     onScoreChange: (s) => emit('score', s),
     onStateChange: (s) => emit('state', s),
@@ -26,9 +49,13 @@ onMounted(() => {
     onPickup: (t) => emit('pickup', t),
   })
   game.mount()
+  // 注意：不再用 ResizeObserver 改 canvas.width/height
+  // canvas 逻辑像素固定 900×300，CSS 用 object-fit: contain 负责视觉缩放
 })
 
 onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
   game?.unmount()
   game = null
 })
@@ -102,12 +129,13 @@ defineExpose({
 .game-canvas {
   position: absolute;
   inset: 0;
+  /* CSS 撑满 wrapper，但内部逻辑像素永远是 config 的 900×300
+     object-fit: contain 让浏览器自动等比缩放居中，不变形、不溢出 */
   width: 100%;
   height: 100%;
+  object-fit: contain;
+  object-position: center;
   display: block;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  background: #87ceeb;
   image-rendering: auto;
 }
 </style>

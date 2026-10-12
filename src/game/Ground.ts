@@ -34,6 +34,14 @@ export class Ground {
     this.offset = 0
   }
 
+  /** 画布尺寸变化时调用 —— 更新宽度并重建缓存 tile */
+  resize(canvasWidth: number, canvasHeight: number, groundY: number): void {
+    this.width = canvasWidth
+    this.canvasHeight = canvasHeight
+    this.groundY = groundY
+    this.buildCache()
+  }
+
   update(speed: number, dt: number): void {
     this.offset += speed * dt
     if (this.offset > this.step * 100) this.offset -= this.step * 100
