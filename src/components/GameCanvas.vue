@@ -49,9 +49,19 @@ onMounted(() => {
     onPickup: (t) => emit('pickup', t),
   })
   game.mount()
-  // 注意：不再用 ResizeObserver 改 canvas.width/height
-  // canvas 逻辑像素固定 900×300，CSS 用 object-fit: contain 负责视觉缩放
+
+  // 手机浏览器（iOS Safari / 安卓 Chrome）在页面首次加载时会节流甚至挂起 RAF，
+  // 必须延迟强制重启循环。延迟 50ms 让浏览器先完成首帧渲染。
+  // 再用 250ms 补一次，覆盖某些更激进的节流策略。
+  setTimeout(() => game?.resumeLoop(), 50)
+  setTimeout(() => game?.resumeLoop(), 250)
+  // 页面首次可见时再补一次（某些 WebView 加载完才触发）
+  window.addEventListener('pageshow', onFirstPageShow, { once: true })
 })
+
+function onFirstPageShow() {
+  game?.resumeLoop()
+}
 
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()

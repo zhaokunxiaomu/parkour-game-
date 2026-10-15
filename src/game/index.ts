@@ -96,11 +96,14 @@ export class Game {
 
   /** 页面从后台切回前台时调用 —— 重启 RAF 循环并重置 lastTs，防止 dt 巨跳 */
   resumeLoop(): void {
-    if (!this.running) this.running = true
+    this.running = true
     this.lastTs = performance.now()
-    if (this.rafId === null) {
-      this.rafId = requestAnimationFrame(this.loop)
+    // 先取消可能被浏览器挂起的旧 RAF，再重新发起
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId)
+      this.rafId = null
     }
+    this.rafId = requestAnimationFrame(this.loop)
   }
 
   unmount(): void {

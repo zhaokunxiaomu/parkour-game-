@@ -130,6 +130,7 @@ onMounted(() => {
   onceOnFirstGesture = () => {
     tryFullscreen()
     tryLockLandscape()
+    gameCanvasRef.value?.resumeLoop() // 同时兜底重启 RAF
     cleanupFirstGestureListener()
   }
   document.addEventListener('click', onceOnFirstGesture, true)
