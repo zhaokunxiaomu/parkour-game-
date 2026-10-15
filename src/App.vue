@@ -26,6 +26,10 @@ const introPending = ref(false) // transition 期间是否为开局提示
 
 const sfxEnabled = ref(true)
 
+/** 继续游戏倒计时：null = 无倒计时，3/2/1 = 正在倒数 */
+const resumeCountdown = ref<number | null>(null)
+let resumeCountdownTimer: number | null = null
+
 /** 道具状态 */
 const floatTexts = ref<{ id: number; type: PickupType; text: string }[]>([])
 let floatId = 0
@@ -115,6 +119,10 @@ onMounted(() => {
 
   window.addEventListener('keydown', onKey)
   window.addEventListener('keyup', onKeyUp)
+  // 手机浏览器在后台/无交互时会节流 RAF，切回前台时手动重启循环
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  window.addEventListener('pageshow', onPageShow)
+  window.addEventListener('focus', onWindowFocus)
 
   // 页面挂载后立即尝试一次全屏（某些 WebView/PWA 允许无手势调用）
   tryFullscreen()
@@ -129,6 +137,18 @@ onMounted(() => {
   document.addEventListener('keydown', onceOnFirstGesture, true)
 })
 
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    gameCanvasRef.value?.resumeLoop()
+  }
+}
+function onPageShow() {
+  gameCanvasRef.value?.resumeLoop()
+}
+function onWindowFocus() {
+  gameCanvasRef.value?.resumeLoop()
+}
+
 function cleanupFirstGestureListener() {
   if (!onceOnFirstGesture) return
   document.removeEventListener('click', onceOnFirstGesture, true)
@@ -142,6 +162,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('keyup', onKeyUp)
   window.removeEventListener('orientationchange', updateViewport)
   window.removeEventListener('resize', updateViewport)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  window.removeEventListener('pageshow', onPageShow)
+  window.removeEventListener('focus', onWindowFocus)
   stopProgressTicker()
   cleanupFirstGestureListener()
 })
@@ -188,10 +211,31 @@ function handleJump() {
   gameCanvasRef.value?.jump()
 }
 function handlePause() {
+  stopResumeCountdown()
   gameCanvasRef.value?.pause()
 }
 function handleResume() {
-  gameCanvasRef.value?.resume()
+  // 显示 3 秒倒计时，让玩家准备好再真正进入 playing
+  resumeCountdown.value = 3
+  resumeCountdownTimer = window.setInterval(() => {
+    if (resumeCountdown.value === null) {
+      stopResumeCountdown()
+      return
+    }
+    resumeCountdown.value -= 1
+    if (resumeCountdown.value <= 0) {
+      stopResumeCountdown()
+      resumeCountdown.value = null
+      gameCanvasRef.value?.resume() // 最后才真正解除暂停
+    }
+  }, 1000)
+}
+function stopResumeCountdown() {
+  if (resumeCountdownTimer !== null) {
+    clearInterval(resumeCountdownTimer)
+    resumeCountdownTimer = null
+  }
+  resumeCountdown.value = null
 }
 function handleBackToMenu() {
   gameCanvasRef.value?.returnToMenu()
@@ -259,7 +303,10 @@ function onVictory() {
 
 const showStart = computed(() => state.value === 'menu')
 const showOver = computed(() => state.value === 'over')
-const showPaused = computed(() => state.value === 'paused')
+const showPaused = computed(
+  () => state.value === 'paused' && resumeCountdown.value === null
+)
+const showResumeCountdown = computed(() => resumeCountdown.value !== null)
 const showTransition = computed(() => state.value === 'transition')
 /** 第一关开局提示：无进度条、点按钮开始 */
 const isIntroTransition = computed(
@@ -410,6 +457,10 @@ function onCanvasClick() {
         @restart="handleRestart"
         @menu="handleBackToMenu"
       />
+      <!-- 继续游戏倒计时：暂停蒙层消失，画面冻结，数字倒数让玩家准备 -->
+      <div v-if="showResumeCountdown" class="resume-countdown" @click.stop>
+        <div class="count-num">{{ resumeCountdown }}</div>
+      </div>
       <GameOverScreen
         v-if="showOver"
         :score="score"
@@ -472,6 +523,49 @@ function onCanvasClick() {
 @media (pointer: coarse) {
   .hint-corner {
     display: none;
+  }
+}
+
+/* ===== 暂停后继续游戏倒计时 ===== */
+.resume-countdown {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  /* 半透明蒙层让数字更醒目，但不挡背后画面 */
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(2px);
+}
+
+.resume-countdown .count-num {
+  font-size: 160px;
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 0 24px rgba(0, 0, 0, 0.6),
+    4px 4px 0 rgba(0, 0, 0, 0.45);
+  animation: pop 1s ease-in-out infinite;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.2;
+  }
+  20% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.8;
   }
 }
 

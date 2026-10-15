@@ -99,6 +99,9 @@ function setSfxEnabled(v: boolean) {
 function isSfxEnabled(): boolean {
   return game?.isSfxEnabled() ?? true
 }
+function resumeLoop() {
+  game?.resumeLoop()
+}
 function getLevelIndex(): number {
   return game?.getLevelIndex() ?? 0
 }
@@ -127,6 +130,7 @@ defineExpose({
   gotoLevel,
   setSfxEnabled,
   isSfxEnabled,
+  resumeLoop,
   getLevelIndex,
   getCurrentLevel,
   getLevelProgress,

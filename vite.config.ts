@@ -5,4 +5,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   base: '/parkour-game-/',
   plugins: [vue()],
+  server: {
+    host: '0.0.0.0',
+  },
 })

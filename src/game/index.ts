@@ -94,6 +94,15 @@ export class Game {
     this.loop(this.lastTs)
   }
 
+  /** 页面从后台切回前台时调用 —— 重启 RAF 循环并重置 lastTs，防止 dt 巨跳 */
+  resumeLoop(): void {
+    if (!this.running) this.running = true
+    this.lastTs = performance.now()
+    if (this.rafId === null) {
+      this.rafId = requestAnimationFrame(this.loop)
+    }
+  }
+
   unmount(): void {
     this.running = false
     if (this.rafId !== null) {
