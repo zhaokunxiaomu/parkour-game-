@@ -19,7 +19,6 @@ const emit = defineEmits<{
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let game: Game | null = null
-let resizeObserver: ResizeObserver | null = null
 
 /** 根据关卡 theme 同步 canvas CSS 背景，与游戏内天空色无缝衔接 */
 function applyThemeBg(theme: Theme): void {
@@ -64,8 +63,6 @@ function onFirstPageShow() {
 }
 
 onBeforeUnmount(() => {
-  resizeObserver?.disconnect()
-  resizeObserver = null
   game?.unmount()
   game = null
 })
@@ -94,9 +91,6 @@ function crouch(on: boolean) {
 function dash() {
   game?.dash()
 }
-function gotoLevel(index: number) {
-  game?.gotoLevel(index)
-}
 function beginPlay() {
   game?.beginPlay()
 }
@@ -106,17 +100,8 @@ function isIntroPending(): boolean {
 function setSfxEnabled(v: boolean) {
   game?.setSfxEnabled(v)
 }
-function isSfxEnabled(): boolean {
-  return game?.isSfxEnabled() ?? true
-}
 function resumeLoop() {
   game?.resumeLoop()
-}
-function getLevelIndex(): number {
-  return game?.getLevelIndex() ?? 0
-}
-function getCurrentLevel(): Level | null {
-  return game?.getCurrentLevel() ?? null
 }
 function getLevelProgress(): {
   current: number
@@ -137,12 +122,8 @@ defineExpose({
   jump,
   crouch,
   dash,
-  gotoLevel,
   setSfxEnabled,
-  isSfxEnabled,
   resumeLoop,
-  getLevelIndex,
-  getCurrentLevel,
   getLevelProgress,
 })
 </script>
@@ -155,7 +136,7 @@ defineExpose({
 .game-canvas {
   position: absolute;
   inset: 0;
-  /* CSS 撑满 wrapper，但内部逻辑像素永远是 config 的 900×300
+  /* CSS 撑满 wrapper，但内部逻辑像素永远是 config 的 900×400
      object-fit: contain 让浏览器自动等比缩放居中，不变形、不溢出 */
   width: 100%;
   height: 100%;

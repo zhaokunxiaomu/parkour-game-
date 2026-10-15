@@ -13,6 +13,8 @@ import { THEMES } from './game/utils'
 
 /** 根据当前关卡主题算出画布外围的背景色，保证各关卡画面无缝融合 */
 const wrapperBg = computed(() => THEMES[currentLevel.value.theme].skyTop)
+/** 当前关卡天空色，传给失败蒙层做同色系渐变 */
+const themeSky = computed(() => THEMES[currentLevel.value.theme])
 
 const gameCanvasRef = ref<InstanceType<typeof GameCanvas> | null>(null)
 const state = ref<GameState>('menu')
@@ -403,37 +405,58 @@ function onCanvasClick() {
         </div>
       </TransitionGroup>
 
-      <!-- 移动端虚拟按钮：下蹲 + 冲刺 + 跳跃（playing 时显示） -->
+      <!-- 移动端虚拟按钮：左侧下蹲+冲刺，右侧跳跃（playing 时显示） -->
       <div v-if="showHUD" class="mobile-virtual">
-        <!-- 左侧：下蹲 -->
-        <button
-          class="virt-btn virt-crouch"
-          @touchstart.prevent="gameCanvasRef?.crouch(true)"
-          @touchend.prevent="gameCanvasRef?.crouch(false)"
-          @touchcancel.prevent="gameCanvasRef?.crouch(false)"
-          @mousedown="gameCanvasRef?.crouch(true)"
-          @mouseup="gameCanvasRef?.crouch(false)"
-          @mouseleave="gameCanvasRef?.crouch(false)"
-        >
-          ↓
-        </button>
-        <!-- 右侧：冲刺 + 跳跃 -->
-        <div class="virt-right-group">
+        <!-- 左侧：下蹲 + 冲刺 -->
+        <div class="virt-left-group">
+          <button
+            class="virt-btn virt-crouch"
+            @touchstart.prevent="gameCanvasRef?.crouch(true)"
+            @touchend.prevent="gameCanvasRef?.crouch(false)"
+            @touchcancel.prevent="gameCanvasRef?.crouch(false)"
+            @mousedown="gameCanvasRef?.crouch(true)"
+            @mouseup="gameCanvasRef?.crouch(false)"
+            @mouseleave="gameCanvasRef?.crouch(false)"
+          >
+            <svg class="virt-icon" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 4v14M6 13l6 6 6-6"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span class="virt-label">下蹲</span>
+          </button>
           <button
             class="virt-btn virt-dash"
             @touchstart.prevent="gameCanvasRef?.dash()"
             @mousedown="gameCanvasRef?.dash()"
           >
-            ⚡
-          </button>
-          <button
-            class="virt-btn virt-jump"
-            @touchstart.prevent="handleJump()"
-            @mousedown="handleJump()"
-          >
-            ↑
+            <svg class="virt-icon" viewBox="0 0 24 24">
+              <path d="M13 2 3 14h8l-1 8 10-12h-8l1-8Z" fill="currentColor" />
+            </svg>
+            <span class="virt-label">冲刺</span>
           </button>
         </div>
+        <!-- 右侧：跳跃 -->
+        <button
+          class="virt-btn virt-jump"
+          @touchstart.prevent="handleJump()"
+          @mousedown="handleJump()"
+        >
+          <svg class="virt-icon virt-icon-lg" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 20V6M6 11l6-6 6 6"
+              stroke="currentColor"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span class="virt-label">跳跃</span>
+        </button>
       </div>
 
       <!-- 蒙层层叠 -->
@@ -451,7 +474,6 @@ function onCanvasClick() {
         :manual="isIntroTransition"
         @start="handleBeginPlay"
       />
-      <ScoreHUD v-if="showHUD" :score="score" />
       <PauseScreen
         v-if="showPaused"
         @resume="handleResume"
@@ -466,6 +488,8 @@ function onCanvasClick() {
         v-if="showOver"
         :score="score"
         :best="best"
+        :sky-top="themeSky.skyTop"
+        :sky-bottom="themeSky.skyBottom"
         @restart="handleRestart"
         @menu="handleBackToMenu"
       />
@@ -666,9 +690,6 @@ function onCanvasClick() {
   transition: width 0.05s linear;
 }
 
-/* LevelSelect 不覆盖 GameOver/Pause 的层级（GameOver/Pause 在后渲染会盖住它） */
-/* 这里通过 z-index 让 LevelSelect 总在 StartScreen 之前 */
-
 /* ===== 道具 HUD ===== */
 
 .shield-hud {
@@ -735,52 +756,77 @@ function onCanvasClick() {
 /* ===== 移动端虚拟按钮 ===== */
 .mobile-virtual {
   position: absolute;
-  bottom: calc(20px + env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(88%, 720px);
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  padding: 0 calc(20px + env(safe-area-inset-right)) 0
+    calc(20px + env(safe-area-inset-left));
   pointer-events: none;
   z-index: 18;
 }
 
-.virt-right-group {
+.virt-left-group {
   display: flex;
   align-items: flex-end;
-  gap: 16px;
+  gap: 14px;
 }
 
 .virt-btn {
-  width: 56px;
-  height: 56px;
-  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 62px;
+  height: 62px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.45);
+  color: #fff;
   backdrop-filter: blur(6px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-  font-size: 22px;
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
   cursor: pointer;
   pointer-events: auto;
   user-select: none;
   touch-action: manipulation;
   transition:
     transform 0.08s,
-    background 0.15s;
+    filter 0.15s;
 }
 .virt-btn:active {
   transform: scale(0.9);
-  background: rgba(255, 255, 255, 0.75);
+  filter: brightness(1.2);
 }
+.virt-icon {
+  width: 20px;
+  height: 20px;
+}
+.virt-icon-lg {
+  width: 24px;
+  height: 24px;
+}
+.virt-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
 .virt-crouch {
-  color: #2c3e50;
+  background: rgba(44, 62, 80, 0.55);
 }
 .virt-dash {
-  color: #e67e22;
+  background: rgba(230, 126, 34, 0.6);
 }
+/* 跳跃是最高频操作：加大一号，放最顺手右下角 */
 .virt-jump {
-  color: #1e90ff;
+  width: 84px;
+  height: 84px;
+  background: rgba(30, 144, 255, 0.62);
 }
 
 /* 桌面隐藏虚拟按钮 */

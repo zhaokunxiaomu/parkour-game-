@@ -43,7 +43,6 @@ const TRANSITION_FRAMES = 240
 
 export class Game {
   private ctx: CanvasRenderingContext2D
-  private canvas: HTMLCanvasElement
   private config: GameConfig
   private callbacks: GameCallbacks
 
@@ -71,9 +70,8 @@ export class Game {
     callbacks: GameCallbacks = {},
     config: Partial<GameConfig> = {}
   ) {
-    this.canvas = canvas
     this.ctx = canvas.getContext('2d')!
-    // config 的 canvasWidth/canvasHeight 来自 DEFAULT_CONFIG（900×300）
+    // config 的 canvasWidth/canvasHeight 来自 DEFAULT_CONFIG（900×400）
     this.config = { ...DEFAULT_CONFIG, ...config }
     this.callbacks = callbacks
 
@@ -188,36 +186,6 @@ export class Game {
     }
   }
 
-  /** 画布尺寸变化时调用 —— 内部逻辑像素不变（900×300），只更新 canvas.width/height */
-  resize(w: number, h: number): void {
-    if (this.canvas.width === w && this.canvas.height === h) return
-    this.canvas.width = w
-    this.canvas.height = h
-  }
-
-  /** 切到指定关卡（供外部关卡选择器调用） */
-  gotoLevel(index: number): void {
-    const clamped = Math.max(0, Math.min(index, LEVELS.length - 1))
-    this.resetWorld()
-    this.levelIndex = clamped
-    this.applyLevelTheme()
-    this.state = 'playing'
-    this.emitState()
-    this.emitLevelChange()
-  }
-
-  getState(): GameState {
-    return this.state
-  }
-
-  getScore(): number {
-    return this.score
-  }
-
-  getLevelIndex(): number {
-    return this.levelIndex
-  }
-
   /** transition 期间是否为"开局第一关提示"（true=开局，需点按钮；false=过关过渡，自动倒计时） */
   isIntroPending(): boolean {
     return this.introPending
@@ -235,10 +203,6 @@ export class Game {
 
   setSfxEnabled(v: boolean): void {
     sfx.setEnabled(v)
-  }
-
-  isSfxEnabled(): boolean {
-    return sfx.isEnabled()
   }
 
   // ---------- 内部 ----------

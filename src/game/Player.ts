@@ -74,11 +74,6 @@ export class Player {
     this.hasShield = false
   }
 
-  /** 画布尺寸变化时调用 —— 保持玩家位置在 canvas 宽度的 20% 处 */
-  resize(canvasWidth: number): void {
-    this.x = canvasWidth * 0.2
-  }
-
   // ===== 跳跃（含二段跳） =====
 
   jump(): boolean {

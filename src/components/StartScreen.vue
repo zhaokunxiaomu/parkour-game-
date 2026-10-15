@@ -51,7 +51,12 @@ defineEmits<{
       </svg>
     </button>
     <div class="panel">
-      <img src="../assets/logo.png" class="logo-img" :draggable="false" alt="跑酷大冒险" />
+      <img
+        src="../assets/logo.png"
+        class="logo-img"
+        :draggable="false"
+        alt="跑酷大冒险"
+      />
       <h1 class="title">跑酷大冒险</h1>
       <p class="tip">跳跃躲障碍 · 下蹲钻门 · 冲刺吃金币，连闯 4 大关卡！</p>
       <button class="btn" @click="$emit('start')">开始游戏</button>

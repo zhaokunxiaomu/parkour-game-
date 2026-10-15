@@ -12,11 +12,6 @@ export function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min)) + min
 }
 
-/** [min, max] 范围内的随机浮点数 */
-export function randRange(min: number, max: number): number {
-  return Math.random() * (max - min) + min
-}
-
 import type { Theme, Level } from './types'
 
 /** 主题色板 —— Ground / Player / Obstacle 全部从这里取色 */
