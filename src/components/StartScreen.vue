@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SvgIcon from './SvgIcon.vue'
+
 defineProps<{
   sfxEnabled: boolean
 }>()
@@ -6,139 +8,55 @@ defineProps<{
 defineEmits<{
   (e: 'start'): void
   (e: 'toggle-sfx'): void
+  (e: 'help'): void
 }>()
+
+const sfxIconBase =
+  'absolute top-[10px] flex h-[34px] w-[34px] items-center justify-center rounded-full border-none p-0 text-[#2c3e50] shadow-none transition-transform duration-[0.08s] cursor-pointer hover:scale-[1.08] active:scale-[0.95]'
 </script>
 
 <template>
-  <div class="overlay" @click.stop>
+  <div
+    class="absolute inset-0 flex items-center justify-center bg-[rgba(0,0,0,0.35)] backdrop-blur-[2px]"
+    @click.stop
+  >
     <button
-      class="sfx-icon"
-      :class="{ off: !sfxEnabled }"
+      :class="[sfxIconBase, 'right-[52px] bg-[rgba(255,255,255,0.9)]']"
+      @click.stop="$emit('help')"
+      title="玩法说明"
+    >
+      <SvgIcon name="help" :size="20" />
+    </button>
+    <button
+      :class="[
+        sfxIconBase,
+        'right-[10px]',
+        sfxEnabled
+          ? 'bg-[rgba(255,255,255,0.9)]'
+          : 'bg-[rgba(255,255,255,0.45)] text-[rgba(44,62,80,0.7)]',
+      ]"
       @click.stop="$emit('toggle-sfx')"
       :title="sfxEnabled ? '关闭音效' : '开启音效'"
     >
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor" />
-        <template v-if="sfxEnabled">
-          <path
-            d="M16.5 8.5a4.5 4.5 0 0 1 0 7"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-        </template>
-        <template v-else>
-          <line
-            x1="17"
-            y1="9.5"
-            x2="22"
-            y2="14.5"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-          <line
-            x1="22"
-            y1="9.5"
-            x2="17"
-            y2="14.5"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-        </template>
-      </svg>
+      <SvgIcon :name="sfxEnabled ? 'volume-up' : 'volume-mute'" :size="20" />
     </button>
-    <div class="panel">
+    <div class="text-center text-white text-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
       <img
-        src="../assets/logo.png"
-        class="logo-img"
+        src="../assets/logo.svg"
+        class="mb-[10px] h-[110px] w-[110px] rounded-[18px] border-[3px] border-[rgba(255,255,255,0.85)] object-cover shadow-[0_4px_14px_rgba(0,0,0,0.35)]"
         :draggable="false"
         alt="跑酷大冒险"
       />
-      <h1 class="title">跑酷大冒险</h1>
-      <p class="tip">跳跃躲障碍 · 下蹲钻门 · 冲刺吃金币，连闯 4 大关卡！</p>
-      <button class="btn" @click="$emit('start')">开始游戏</button>
+      <h1 class="m-0 mb-3 text-[36px] tracking-[4px]">跑酷大冒险</h1>
+      <p class="m-0 mb-7 text-[16px] opacity-85">
+        跳跃躲障碍 · 下蹲钻门 · 冲刺吃金币，连闯 4 大关卡！
+      </p>
+      <button
+        class="rounded-lg border-none bg-linear-to-br from-[#ff6b6b] to-[#ee5a24] px-9 py-3 text-[18px] text-white shadow-[0_4px_0_rgba(0,0,0,0.25)] transition-transform duration-[0.08s] cursor-pointer active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.25)]"
+        @click="$emit('start')"
+      >
+        开始游戏
+      </button>
     </div>
   </div>
 </template>
-
-<style scoped>
-.overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(2px);
-}
-.panel {
-  text-align: center;
-  color: #fff;
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
-}
-.logo-img {
-  width: 110px;
-  height: 110px;
-  object-fit: cover;
-  border-radius: 18px;
-  margin: 0 0 10px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  border: 3px solid rgba(255, 255, 255, 0.85);
-}
-.title {
-  font-size: 36px;
-  margin: 0 0 12px;
-  letter-spacing: 4px;
-}
-.tip {
-  font-size: 16px;
-  margin: 0 0 28px;
-  opacity: 0.85;
-}
-.btn {
-  padding: 12px 36px;
-  font-size: 18px;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
-  transition: transform 0.08s;
-}
-.btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
-}
-
-.sfx-icon {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  color: #2c3e50;
-  cursor: pointer;
-  transition: transform 0.08s;
-}
-.sfx-icon:hover {
-  transform: scale(1.08);
-}
-.sfx-icon:active {
-  transform: scale(0.95);
-}
-.sfx-icon.off {
-  background: rgba(255, 255, 255, 0.45);
-  color: rgba(44, 62, 80, 0.7);
-}
-</style>

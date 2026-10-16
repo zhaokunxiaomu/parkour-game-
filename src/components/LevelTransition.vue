@@ -25,24 +25,40 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="overlay">
-    <div class="panel">
-      <p class="chapter">第 {{ index + 1 }} / {{ total }} 关</p>
-      <h1 class="title">{{ level.name }}</h1>
-      <p class="desc">{{ level.description }}</p>
-      <p class="target">目标得分：{{ level.targetScore }}</p>
+  <div
+    class="overlay absolute inset-0 flex items-center justify-center bg-[rgba(0,0,0,0.6)] backdrop-blur-[4px]"
+  >
+    <div class="text-center text-white text-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
+      <p class="m-0 mb-[6px] text-[14px] tracking-[3px] text-[#ffd700]">
+        第 {{ index + 1 }} / {{ total }} 关
+      </p>
+      <h1 class="m-0 mb-3 text-[48px] tracking-[6px]">{{ level.name }}</h1>
+      <p class="m-0 mb-[6px] text-[16px] opacity-85">{{ level.description }}</p>
+      <p class="m-0 mb-6 text-[14px] opacity-70">
+        目标得分：{{ level.targetScore }}
+      </p>
 
       <!-- 第一关：手动开始按钮 -->
       <template v-if="manual">
-        <button class="btn" @click="emit('start')">开始</button>
+        <button
+          class="mb-[14px] rounded-lg border-none bg-linear-to-br from-[#ffd700] to-[#ffa500] px-10 py-3 text-[18px] font-bold text-[#2c3e50] text-shadow-none shadow-[0_4px_0_rgba(0,0,0,0.25)] transition-transform duration-[0.08s] cursor-pointer active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.25)]"
+          @click="emit('start')"
+        >
+          开始
+        </button>
       </template>
 
       <!-- 后续关卡：自动倒计时进度条 -->
       <template v-else>
-        <div class="progress-bar">
-          <div class="progress-fill" :style="{ width: progress * 100 + '%' }" />
+        <div
+          class="mx-auto mb-5 h-[6px] w-[220px] overflow-hidden rounded-[3px] bg-[rgba(255,255,255,0.2)]"
+        >
+          <div
+            class="h-full bg-linear-to-r from-[#ffd700] to-[#ffa500] transition-[width] duration-[0.05s] ease-linear"
+            :style="{ width: progress * 100 + '%' }"
+          />
         </div>
-        <p class="hint">准备好 ——</p>
+        <p class="m-0 text-[14px] opacity-60">准备好 ——</p>
       </template>
     </div>
   </div>
@@ -50,13 +66,6 @@ onMounted(() => {
 
 <style scoped>
 .overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
   animation: fadeIn 0.3s ease-out;
 }
 @keyframes fadeIn {
@@ -66,75 +75,5 @@ onMounted(() => {
   to {
     opacity: 1;
   }
-}
-
-.panel {
-  text-align: center;
-  color: #fff;
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
-}
-
-.chapter {
-  margin: 0 0 6px;
-  font-size: 14px;
-  letter-spacing: 3px;
-  color: #ffd700;
-}
-
-.title {
-  margin: 0 0 12px;
-  font-size: 48px;
-  letter-spacing: 6px;
-}
-
-.desc {
-  margin: 0 0 6px;
-  font-size: 16px;
-  opacity: 0.85;
-}
-
-.target {
-  margin: 0 0 24px;
-  font-size: 14px;
-  opacity: 0.7;
-}
-
-.btn {
-  padding: 12px 40px;
-  margin-bottom: 14px;
-  font-size: 18px;
-  font-weight: bold;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #ffd700, #ffa500);
-  color: #2c3e50;
-  cursor: pointer;
-  text-shadow: none;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
-  transition: transform 0.08s;
-}
-.btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
-}
-
-.progress-bar {
-  width: 220px;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-  overflow: hidden;
-  margin: 0 auto 20px;
-}
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #ffd700, #ffa500);
-  transition: width 0.05s linear;
-}
-
-.hint {
-  margin: 0;
-  font-size: 14px;
-  opacity: 0.6;
 }
 </style>

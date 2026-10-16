@@ -1,5 +1,7 @@
 import { createApp } from 'vue'
 import { setupDevtoolsGuard } from './utils/devtoolsGuard'
+// 引入svg图标注册脚本
+import 'virtual:svg-icons/register'
 import './style.css'
 import App from './App.vue'
 

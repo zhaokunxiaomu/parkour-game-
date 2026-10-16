@@ -4,91 +4,48 @@ defineEmits<{
   (e: 'restart'): void
   (e: 'menu'): void
 }>()
+
+// 三种按钮共用的基础样式（背景/边框色由各自变体单独指定，避免工具类冲突）
+const btnBase =
+  'min-w-[160px] px-9 py-3 text-[17px] rounded-lg border-2 cursor-pointer shadow-[0_4px_0_rgba(0,0,0,0.25)] transition-[transform,background] duration-[0.08s,0.2s] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.25)]'
 </script>
 
 <template>
-  <div class="overlay" @click.stop>
-    <div class="panel">
-      <h1 class="title">已暂停</h1>
-      <div class="btns">
-        <button class="btn primary" @click="$emit('resume')">继续</button>
-        <button class="btn" @click="$emit('restart')">重新开始</button>
-        <button class="btn ghost" @click="$emit('menu')">返回主菜单</button>
+  <div
+    class="absolute inset-0 flex items-center justify-center bg-[rgba(0,0,0,0.55)] backdrop-blur-[4px]"
+    @click.stop
+  >
+    <div class="text-center text-white text-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
+      <h1 class="m-0 mb-7 text-[42px] tracking-[4px]">已暂停</h1>
+      <div class="flex flex-col items-center gap-3">
+        <button
+          :class="[
+            btnBase,
+            'bg-linear-to-br from-[#2ed573] to-[#1e90ff] border-transparent text-white hover:brightness-110',
+          ]"
+          @click="$emit('resume')"
+        >
+          继续
+        </button>
+        <button
+          :class="[
+            btnBase,
+            'bg-[rgba(255,255,255,0.15)] border-[rgba(255,255,255,0.4)] text-white hover:bg-[rgba(255,255,255,0.28)]',
+          ]"
+          @click="$emit('restart')"
+        >
+          重新开始
+        </button>
+        <button
+          :class="[
+            btnBase,
+            'bg-transparent border-[rgba(255,255,255,0.35)] text-[rgba(255,255,255,0.85)] hover:bg-[rgba(255,255,255,0.1)]',
+          ]"
+          @click="$emit('menu')"
+        >
+          返回主菜单
+        </button>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(4px);
-}
-
-.panel {
-  text-align: center;
-  color: #fff;
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
-}
-
-.title {
-  font-size: 42px;
-  margin: 0 0 28px;
-  letter-spacing: 4px;
-}
-
-.btns {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: center;
-}
-
-.btn {
-  padding: 12px 36px;
-  font-size: 17px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
-  transition:
-    transform 0.08s,
-    background 0.2s;
-  min-width: 160px;
-}
-
-.btn:hover {
-  background: rgba(255, 255, 255, 0.28);
-}
-
-.btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
-}
-
-.btn.primary {
-  background: linear-gradient(135deg, #2ed573, #1e90ff);
-  border-color: transparent;
-}
-
-.btn.primary:hover {
-  filter: brightness(1.1);
-}
-
-.btn.ghost {
-  background: transparent;
-  border-color: rgba(255, 255, 255, 0.35);
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.btn.ghost:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-</style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import SvgIcon from './SvgIcon.vue'
 
 const props = defineProps<{
   score: number
@@ -44,22 +45,7 @@ const cheer = computed(() => {
     <div class="card">
       <!-- 顶部图标 -->
       <div class="badge-icon">
-        <svg viewBox="0 0 24 24" width="34" height="34" fill="none">
-          <path
-            d="M12 3a7 7 0 0 0-7 7c0 2.4 1.2 4.5 3 5.8V19a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-3.2c1.8-1.3 3-3.4 3-5.8a7 7 0 0 0-7-7Z"
-            stroke="#fff"
-            stroke-width="1.8"
-            stroke-linejoin="round"
-          />
-          <circle cx="9.5" cy="10.5" r="1.4" fill="#fff" />
-          <circle cx="14.5" cy="10.5" r="1.4" fill="#fff" />
-          <path
-            d="M9.5 14.5c.8.7 4.2.7 5 0"
-            stroke="#fff"
-            stroke-width="1.6"
-            stroke-linecap="round"
-          />
-        </svg>
+        <SvgIcon name="gameover" />
       </div>
 
       <h1 class="title">GAME OVER</h1>
@@ -67,12 +53,7 @@ const cheer = computed(() => {
 
       <!-- 新纪录横幅 -->
       <div v-if="isNewBest" class="record-banner">
-        <svg viewBox="0 0 24 24" width="14" height="14">
-          <path
-            d="M12 2.5l2.7 5.8 6.3.7-4.7 4.3 1.3 6.2L12 16.2l-5.6 3.3 1.3-6.2L3 7l6.3-.7L12 2.5Z"
-            fill="#ffd700"
-          />
-        </svg>
+        <SvgIcon name="star" :size="14" class="record-star" />
         <span>新纪录诞生！</span>
       </div>
 
@@ -92,21 +73,7 @@ const cheer = computed(() => {
       <!-- 按钮 -->
       <div class="btns">
         <button class="btn btn-primary" @click="$emit('restart')">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-            <path
-              d="M4 12a8 8 0 0 1 13.7-5.6M20 12a8 8 0 0 1-13.7 5.6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-            <path
-              d="M17.5 3.5v3.4h-3.4M6.5 20.5v-3.4h3.4"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <SvgIcon name="refresh" :size="16" />
           <span>再来一局</span>
         </button>
         <button class="btn btn-ghost" @click="$emit('menu')">回到主菜单</button>
@@ -173,6 +140,16 @@ const cheer = computed(() => {
   background: linear-gradient(135deg, #ff6b6b, #e74c3c);
   box-shadow: 0 6px 18px rgba(231, 76, 60, 0.45);
   margin-bottom: 12px;
+  color: #fff;
+}
+.badge-icon svg {
+  width: 34px;
+  height: 34px;
+}
+
+/* 新纪录星星：金色，与横幅文字区分 */
+.record-star {
+  color: #ffd700;
 }
 
 .title {
